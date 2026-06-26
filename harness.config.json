@@ -1,0 +1,54 @@
+{
+  "$comment": "Fonte única de configuração da esteira. Todos os comandos e scripts leem daqui. Não espalhar valores hardcoded pelos arquivos de instrução.",
+  "github_user": "lucas-cavalcanti-ads",
+  "repos": {
+    "arquitetura_referencia": {
+      "url": "https://github.com/lucas-cavalcanti-ads/arquitetura-referencia",
+      "branch": "main",
+      "local_path": "/Users/lucavpa/Documents/tech/gen-ai/contextos/arquitetura-referencia",
+      "constitution_path": "CONSTITUTION.md",
+      "_local_path_comment": "Se preenchido e existente, o fetch lê a constituição localmente (alinhado ao 'tudo roda localmente'). Se vazio ou inexistente (ex: rodando do celular), o fetch clona a url. A versão semântica NÃO fica aqui: é lida em run-time do marcador <!-- arquitetura_version: X.Y.Z --> no topo do CONSTITUTION.md, para evitar drift."
+    },
+    "refinamentos": {
+      "_comment": "Repo CENTRAL de refinamentos. É (a) destino válido quando refinamento_destino resolve para 'repo_central', e (b) a casa permanente do quality-log.jsonl — o ledger append-only de notas, SEMPRE centralizado para garantir comparabilidade entre runs, independentemente de onde os artefatos da spec forem gravados.",
+      "url": "https://github.com/lucas-cavalcanti-ads/refinamentos-gen-ai",
+      "branch": "main",
+      "quality_log_path": "quality-log.jsonl"
+    }
+  },
+  "refinamento_destino": {
+    "_comment": "Resolve ONDE os artefatos de refinamento (spec.md, plan.md, tasks.md, scorecard.md, ADRs) são gravados — por run. Precedência: (1) destino informado pelo usuário na Etapa 1; (2) o 'default' abaixo. NÃO governa o quality-log.jsonl, que é sempre centralizado (ver repos.refinamentos).",
+    "default": "repo_alvo",
+    "_default_valores": "repo_alvo = pasta oculta dentro do próprio repo-alvo de código (a spec viaja junto do código; vai na mesma branch claude-{slug} do PR); repo_central = empurra para refinamentos-gen-ai em branch própria (comportamento anterior).",
+    "pasta_oculta_no_repo_alvo": ".refinamentos/{slug}",
+    "_pasta_oculta_comment": "Caminho relativo à raiz do repo-alvo, usado quando o destino resolvido é 'repo_alvo'. {slug} expande para o resumo de três palavras da demanda. Troque livremente (ex: '.claude/refinamentos/{slug}') — basta editar aqui."
+  },
+  "gates": {
+    "_comment": "Controle dos gates de confirmação entre etapas. Com pausar_entre_etapas=true (default), o /run PARA e ENCERRA O TURNO após a Etapa 1 e após a Etapa 2, e só continua num novo turno do usuário com aprovação explícita. Mude para false apenas se quiser execução corrida, sem pausas (não recomendado).",
+    "pausar_entre_etapas": true
+  },
+  "timezone": "America/Sao_Paulo",
+  "branch_naming": {
+    "refinamentos": "claude-{slug}-{yyyymmdd}-{hhmmss}",
+    "implementacao": "claude-{slug}",
+    "_slug": "resumo da implementação em três palavras separadas por hífen, ex: melhoria-de-logs",
+    "_yyyymmdd": "data de criação em UTC-3, ex: 20260615",
+    "_hhmmss": "hora de criação em UTC-3, ex: 205023"
+  },
+  "speckit": {
+    "_comment": "Ordem canônica do Spec Kit. Etapa 2 executa fase_refinamento; Etapa 3 executa fase_implementacao.",
+    "fase_refinamento": ["constitution", "specify", "clarify", "checklist", "plan", "tasks", "analyze"],
+    "fase_implementacao": ["implement"]
+  },
+  "scorecard": {
+    "rubric_version": "1.0.0",
+    "nota_minima_spec": 7.0,
+    "nota_minima_impl": 7.0,
+    "_comment": "nota_minima são gates de aviso (não bloqueiam automaticamente, mas exigem confirmação explícita do usuário para prosseguir abaixo delas). rubric_version versiona a rubrica do scorecard (mora no harness); arquitetura_version versiona a constituição (mora no repo de arquitetura) e é lida em run-time."
+  },
+  "skills_compartilhadas": {
+    "_comment": "Opcional. Repo externo com skills/agents compartilhados puxados pelo setup.sh. Deixe url vazio para usar apenas o acervo local em .claude/skills.",
+    "url": "",
+    "branch": "main"
+  }
+}
