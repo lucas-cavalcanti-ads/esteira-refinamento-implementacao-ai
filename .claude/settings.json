@@ -1,0 +1,29 @@
+{
+  "$comment": "Permissões e config do projeto para o Claude Code rodar a esteira. Ajuste 'allow' conforme seu conforto; o harness precisa de git, dos scripts e da CLI do Spec Kit.",
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(gh:*)",
+      "Bash(bash scripts/bootstrap.sh)",
+      "Bash(./scripts/bootstrap.sh)",
+      "Bash(./scripts/check-prereqs.sh)",
+      "Bash(./scripts/setup.sh)",
+      "Bash(./scripts/fetch-constitution.sh)",
+      "Bash(./scripts/metrics.sh:*)",
+      "Bash(./scripts/scorecard-trend.sh:*)",
+      "Bash(specify:*)",
+      "Bash(uvx:*)",
+      "Bash(uv:*)",
+      "Bash(TZ=America/Sao_Paulo date:*)",
+      "Read",
+      "Write",
+      "Edit",
+      "Grep",
+      "Glob"
+    ],
+    "deny": [
+      "Bash(rm -rf /*)",
+      "Read(./**/.env)"
+    ]
+  }
+}
