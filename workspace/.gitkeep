@@ -1,0 +1,2 @@
+# Mantém a pasta workspace/ no git. O conteúdo é efêmero e ignorado (.gitignore).
+# Aqui os repos-alvo são clonados durante cada run e o estado (.run-state.json) é gravado.
