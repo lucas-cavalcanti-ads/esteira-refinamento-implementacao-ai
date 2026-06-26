@@ -1,0 +1,211 @@
+openapi: 3.0.3
+info:
+  title: English Partner — API local de estudos de inglês
+  version: 1.0.0
+  description: >
+    API REST local (local-first) para organizar units, anexos e anotações, gerar conteúdo de estudo
+    e consultar progresso/erros/busca. Constituição arquitetura-referencia v1.0.0.
+servers:
+  - url: http://localhost:8080/api/v1
+tags:
+  - name: units
+  - name: attachments
+  - name: notes
+  - name: topics
+  - name: generation
+  - name: knowledge
+paths:
+  /units:
+    get:
+      tags: [units]
+      summary: Lista units (carrega a base local)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Unit' } } } } }
+    post:
+      tags: [units]
+      summary: Cria uma unit e a pasta local (FR-001/FR-002)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/CreateUnitRequest' } } }
+      responses:
+        '201': { description: Criada, content: { application/json: { schema: { $ref: '#/components/schemas/Unit' } } } }
+        '409': { description: Unit com esse número já existe }
+  /units/{number}:
+    get:
+      tags: [units]
+      summary: Visão da unit — arquivos, anotações, temas, conteúdos gerados (FR-017)
+      parameters: [{ name: number, in: path, required: true, schema: { type: integer } }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/UnitView' } } } }
+        '404': { description: Não encontrada }
+  /units/{number}/attachments:
+    post:
+      tags: [attachments]
+      summary: Anexa PDF de material/homework/correção (FR-003)
+      parameters: [{ name: number, in: path, required: true, schema: { type: integer } }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                type: { type: string, enum: [MATERIAL, HOMEWORK, CORRECTION] }
+                file: { type: string, format: binary }
+      responses:
+        '201': { description: Anexado, content: { application/json: { schema: { $ref: '#/components/schemas/Attachment' } } } }
+  /units/{number}/correction:
+    put:
+      tags: [attachments]
+      summary: Registra a correção do homework (texto), alternativa ao PDF (FR-003)
+      parameters: [{ name: number, in: path, required: true, schema: { type: integer } }]
+      requestBody:
+        content: { application/json: { schema: { type: object, properties: { content: { type: string } } } } }
+      responses: { '200': { description: Registrada } }
+  /units/{number}/notes:
+    put:
+      tags: [notes]
+      summary: Cria/edita as anotações da unit (FR-004)
+      parameters: [{ name: number, in: path, required: true, schema: { type: integer } }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, properties: { content: { type: string } } } } }
+      responses: { '200': { description: Salvo } }
+  /units/{number}/topics:
+    put:
+      tags: [topics]
+      summary: Registra/extrai temas da unit (FR-005)
+      parameters: [{ name: number, in: path, required: true, schema: { type: integer } }]
+      requestBody:
+        content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Topic' } } } }
+      responses: { '200': { description: Salvo } }
+  /units/{number}/topics/{topicId}/status:
+    put:
+      tags: [topics]
+      summary: Marca status de domínio do tema (FR-015)
+      parameters:
+        - { name: number, in: path, required: true, schema: { type: integer } }
+        - { name: topicId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content: { application/json: { schema: { type: object, properties: { masteryStatus: { type: string, enum: [REVISADO, PRECISO_REFORCAR, DOMINADO] } } } } }
+      responses: { '200': { description: Atualizado } }
+  /units/{number}/generate/summary:
+    post:
+      tags: [generation]
+      summary: Gera resumo de revisão (FR-011)
+      parameters: [{ name: number, in: path, required: true, schema: { type: integer } }]
+      responses:
+        '200': { description: Gerado, content: { application/json: { schema: { $ref: '#/components/schemas/GeneratedRef' } } } }
+        '422': { description: Base insuficiente para gerar }
+        '503': { description: Motor de IA indisponível (offline) }
+  /units/{number}/generate/exercises:
+    post:
+      tags: [generation]
+      summary: Gera ≥5 exercícios considerando erros recorrentes anteriores (FR-012/SC-003/SC-004)
+      parameters: [{ name: number, in: path, required: true, schema: { type: integer } }]
+      responses:
+        '200': { description: Gerado, content: { application/json: { schema: { $ref: '#/components/schemas/GeneratedRef' } } } }
+        '422': { description: Base insuficiente }
+        '503': { description: Motor de IA indisponível }
+  /units/{number}/generate/flashcards:
+    post:
+      tags: [generation]
+      summary: Gera ≥10 flashcards (FR-013/SC-003)
+      parameters: [{ name: number, in: path, required: true, schema: { type: integer } }]
+      responses:
+        '200': { description: Gerado, content: { application/json: { schema: { $ref: '#/components/schemas/GeneratedRef' } } } }
+  /units/{number}/export:
+    get:
+      tags: [generation]
+      summary: Exporta conteúdos gerados em md/json/pdf (FR-020)
+      parameters:
+        - { name: number, in: path, required: true, schema: { type: integer } }
+        - { name: format, in: query, schema: { type: string, enum: [md, json, pdf] } }
+      responses: { '200': { description: OK } }
+  /progress:
+    get:
+      tags: [knowledge]
+      summary: Visão geral de progresso por unit (FR-016)
+      responses: { '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/UnitProgress' } } } } } }
+  /errors:
+    get:
+      tags: [knowledge]
+      summary: Erros recorrentes — por unit e visão geral (FR-014)
+      parameters: [{ name: unit, in: query, required: false, schema: { type: integer } }]
+      responses: { '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/RecurringError' } } } } } }
+  /search:
+    get:
+      tags: [knowledge]
+      summary: Busca por palavra-chave em toda a base (FR-018)
+      parameters: [{ name: q, in: query, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/SearchHit' } } } } } }
+components:
+  schemas:
+    CreateUnitRequest:
+      type: object
+      required: [number, title]
+      properties:
+        number: { type: integer, minimum: 1 }
+        title: { type: string }
+        date: { type: string, format: date }
+        status: { type: string, enum: [EM_ANDAMENTO, CONCLUIDA] }
+        observations: { type: string }
+    Unit:
+      type: object
+      properties:
+        number: { type: integer }
+        title: { type: string }
+        date: { type: string, format: date }
+        status: { type: string, enum: [EM_ANDAMENTO, CONCLUIDA] }
+        observations: { type: string }
+    Attachment:
+      type: object
+      properties:
+        type: { type: string, enum: [MATERIAL, HOMEWORK, CORRECTION] }
+        path: { type: string }
+        extractionStatus: { type: string, enum: [EXTRACTED, NO_TEXT, PENDING] }
+    Topic:
+      type: object
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [GRAMMAR, VOCABULARY, EXPRESSION, PRONUNCIATION, RECURRING_ERROR] }
+        label: { type: string }
+        masteryStatus: { type: string, enum: [REVISADO, PRECISO_REFORCAR, DOMINADO] }
+    UnitView:
+      type: object
+      properties:
+        unit: { $ref: '#/components/schemas/Unit' }
+        attachments: { type: array, items: { $ref: '#/components/schemas/Attachment' } }
+        notesPath: { type: string }
+        topics: { type: array, items: { $ref: '#/components/schemas/Topic' } }
+        generated: { type: array, items: { $ref: '#/components/schemas/GeneratedRef' } }
+    GeneratedRef:
+      type: object
+      properties:
+        type: { type: string, enum: [SUMMARY, EXERCISES, FLASHCARDS] }
+        path: { type: string }
+        count: { type: integer, description: nº de itens (exercícios/flashcards) }
+        generatedAt: { type: string, format: date-time }
+    UnitProgress:
+      type: object
+      properties:
+        number: { type: integer }
+        hasMaterial: { type: boolean }
+        hasHomework: { type: boolean }
+        hasCorrection: { type: boolean }
+        pendingReviewTopics: { type: integer }
+    RecurringError:
+      type: object
+      properties:
+        id: { type: string }
+        label: { type: string }
+        category: { type: string }
+        occurrences: { type: integer }
+        sourceUnits: { type: array, items: { type: integer } }
+    SearchHit:
+      type: object
+      properties:
+        kind: { type: string, enum: [UNIT, NOTE, VOCABULARY, EXERCISE, FLASHCARD, ERROR] }
+        unitNumber: { type: integer }
+        snippet: { type: string }
+        ref: { type: string }
