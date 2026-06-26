@@ -1,0 +1,20 @@
+# Workspace efêmero: repos-alvo clonados e estado de run. Nunca versionar.
+workspace/*
+!workspace/.gitkeep
+
+# Constituição materializada em run-time (fonte da verdade é o repo de arquitetura).
+.specify/memory/constitution.md
+
+# Artefatos do Spec Kit que sejam locais à máquina (ajuste conforme o init do Spec Kit).
+.specify/cache/
+
+# Segredos — jamais versionar.
+.env
+*.env
+.env.*
+
+# Ruído de SO/editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
